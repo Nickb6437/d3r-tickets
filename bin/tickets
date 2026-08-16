@@ -1,0 +1,125 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * tickets: what you have in flight, across Jira, GitHub and stoker.
+ */
+
+use D3R\Tickets\Ansi;
+use D3R\Tickets\Board;
+use D3R\Tickets\Config;
+use D3R\Tickets\Doctor;
+use D3R\Tickets\Filters;
+use D3R\Tickets\GitHub;
+use D3R\Tickets\Jira;
+use D3R\Tickets\Progress;
+use D3R\Tickets\Stoker;
+use D3R\Tickets\Table;
+
+spl_autoload_register(function (string $class): void {
+    if (!str_starts_with($class, 'D3R\\Tickets\\')) {
+        return;
+    }
+
+    $path = __DIR__ . '/../src/' . str_replace('\\', '/', substr($class, 12)) . '.php';
+    if (is_readable($path)) {
+        require_once $path;
+    }
+});
+
+$longOptions = ['anyone', 'active', 'project:', 'status:', 'machine:', 'since:', 'fresh', 'no-links', 'no-colour', 'help'];
+$known = array_map(static fn(string $option) => rtrim($option, ':'), $longOptions);
+
+// getopt ignores unknown long options without a word, which hides a typo or an old flag.
+foreach (array_slice($argv, 1) as $argument) {
+    if (str_starts_with($argument, '--') && !in_array(explode('=', substr($argument, 2))[0], $known, true)) {
+        fwrite(STDERR, sprintf("! Ignored unknown option %s. Try tickets -h.\n", $argument));
+    }
+}
+
+$restIndex = 0;
+$options = getopt('hap:s:m:', $longOptions, $restIndex);
+$identifier = $argv[$restIndex] ?? null;
+
+if (isset($options['h']) || isset($options['help'])) {
+    fwrite(STDOUT, <<<HELP
+    Usage: tickets [options] [<identifier>]
+           tickets doctor
+
+    Arguments:
+      identifier            A ticket key, or part of a summary, branch or repo.
+                            A full key such as LF-8141 is fetched outright.
+      doctor                Check Jira, gh and stoker are set up and reachable.
+
+    Options:
+      -p, --project=KEY     Jira project key, for example LF
+      -s, --status=STATUS   Status to match, partial, for example review
+      -m, --machine=NAME    Staging machine: niki (loaf), aliz (soho), anya (general)
+      -a, --anyone          Include work that is not yours, such as a staging box
+                            running someone else's branch. Their tickets are marked *
+          --active          Hide finished tickets (Live by default, set in config)
+          --since=DAYS      Only work touched in this window (default 90, 0 for no limit)
+          --fresh           Ignore the cached deployment list and ask stoker again
+          --no-links        Print without terminal hyperlinks
+          --no-colour       Print without colour
+      -h, --help            This help
+
+    Examples:
+      tickets --active      What is still in flight, the everyday view
+      tickets LF-8141       One ticket, whoever it is assigned to
+      tickets -m niki       Everything of yours deployed to a loaf staging box
+      tickets -m niki -a    Every box on niki, whoever owns it
+      tickets -p LF -s review
+      tickets basket        Anything with basket in the summary or branch
+
+    HELP);
+    exit(0);
+}
+
+$config = new Config();
+$isTty = function_exists('posix_isatty') && posix_isatty(STDOUT);
+$ansi = new Ansi(
+    colour: $isTty && !isset($options['no-colour']),
+    links: $isTty && !isset($options['no-links'])
+);
+
+Progress::enable(function_exists('posix_isatty') && posix_isatty(STDERR) && !isset($options['no-colour']));
+
+if ($identifier === 'doctor') {
+    Progress::step('checking your setup');
+    $doctor = new Doctor($config, $ansi);
+    $report = $doctor->report();
+    Progress::clear();
+
+    fwrite(STDOUT, $report);
+    exit($doctor->healthy() ? 0 : 1);
+}
+
+$sinceDays = (int) ($options['since'] ?? $config->get('display', 'since_days'));
+$filters = Filters::fromOptions($options, $identifier, $config->inactiveStatuses());
+$table = new Table($ansi, $config->get('jira', 'host'));
+
+$jira = new Jira($config);
+$github = new GitHub();
+$stoker = new Stoker($config, useCache: !isset($options['fresh']));
+
+$board = new Board($jira, $github, $stoker, $config);
+$items = $board->build($sinceDays, $filters);
+
+$empty = $filters->active()
+    ? sprintf('Nothing matches %s.', $filters->describe())
+    : 'Nothing assigned and nothing in flight.';
+
+fwrite(STDOUT, $table->render($items, $empty));
+
+$warnings = array_merge($jira->warnings(), $github->warnings(), $stoker->warnings());
+
+if (!$config->hasJira()) {
+    $warnings[] = sprintf('No Jira credentials in %s, so tickets are missing.', $config->path());
+}
+
+foreach ($warnings as $warning) {
+    fwrite(STDERR, "\n! " . $warning . "\n");
+}
+
+exit(0);

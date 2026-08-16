@@ -1,0 +1,24 @@
+; Copy to ~/.config/d3r-tickets/config.ini and chmod 600.
+; Create an API token at https://id.atlassian.com/manage-profile/security/api-tokens
+
+[jira]
+host = d3rjira.atlassian.net
+email =
+token =
+
+[github]
+; gh handles auth; this is only the org to search for your pull requests.
+org = D3R
+
+[stoker]
+; ssh host for the vagrant stack box, as named in ~/.ssh/config
+ssh_host = stack
+; Left blank, the first /Volumes/*/clients mount is used.
+clients_path =
+; How long to trust the cached deployment list. 0 disables caching.
+cache_seconds = 120
+
+[display]
+since_days = 90
+; Statuses --active hides. Comma separated, add Closed or Done to taste.
+inactive = Live
