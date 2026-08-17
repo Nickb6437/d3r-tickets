@@ -24,7 +24,7 @@ Ticket key opens Jira. Summary and `#number` open the pull request. Alias opens 
 | `tickets -p LF` | One project |
 | `tickets -s review` | Status, partial, so this catches D3R and LOAF review |
 | `tickets -m niki` | Your work on a staging machine |
-| `tickets -m niki -a` | **Every box on a machine**, whoever owns it, including ones on trunk |
+| `tickets -m niki -a` | **Every box on a machine**, whoever owns it, including ones on trunk. Leave `--active` off for the complete list |
 | `tickets doctor` | Check Jira, gh and stoker are set up and reachable |
 
 Flags combine: `tickets -p LF -s review -m niki`.
@@ -86,8 +86,11 @@ warning, not an error. Only a broken config or a rejected Jira token exits non-z
   shorter `--since` keeps you under it.
 - Deployments are cached for two minutes in `~/.cache/d3r-tickets/`. Use `--fresh` after
   redeploying a box.
-- Ticket keys are read off branch names, never pull request titles, since titles often
-  name two tickets.
+- Ticket keys come from the branch name first, then the pull request title, since not
+  every branch carries one (`bugherd-fixes` only names LF-7978 in its title). A key only
+  counts if Jira recognises it, which is what stops `revert-7364-…` reading as REVERT-7364.
+- `--active` hides finished tickets by status, and rows with no ticket by their pull
+  request: merged or closed with nothing deployed. A staging box is never hidden this way.
 - Runs in 8 to 10 seconds, with a spinner on stderr naming the current step. Stdout stays
   clean, so piping and `--no-colour` are unaffected.
 

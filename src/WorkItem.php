@@ -71,7 +71,23 @@ class WorkItem
      */
     public function ticketKey(): ?string
     {
-        return $this->key ?? ($this->branch === null ? null : Key::fromBranch($this->branch));
+        return $this->key ?? Key::fromBranch($this->branch ?? '') ?? Key::fromBranch($this->pr['title'] ?? '');
+    }
+
+    /**
+     * Every key this row could belong to, branch before pull request title.
+     *
+     * Not every branch carries its key: bugherd-fixes only names LF-7978 in the pull
+     * request title. Titles are the weaker source because they often name two tickets.
+     *
+     * @return string[]
+     */
+    public function candidateKeys(): array
+    {
+        return array_values(array_unique(array_merge(
+            Key::allFromBranch($this->branch ?? ''),
+            Key::allFromBranch($this->pr['title'] ?? '')
+        )));
     }
 
     /**

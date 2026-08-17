@@ -162,7 +162,10 @@ class Filters
     }
 
     /**
-     * Whether the ticket sits in a status that counts as done.
+     * Whether this row is done with.
+     *
+     * A ticket is judged on its status. A row with no ticket has no status to judge, so
+     * its pull request stands in: merged or closed with nothing deployed is finished.
      *
      * @param  WorkItem $item
      * @return bool
@@ -170,7 +173,8 @@ class Filters
     private function isFinished(WorkItem $item): bool
     {
         if ($item->status === null) {
-            return false;
+            return $item->staging === null
+                && in_array($item->pr['state'] ?? '', ['merged', 'closed'], true);
         }
 
         foreach ($this->inactiveStatuses as $status) {

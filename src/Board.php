@@ -94,9 +94,13 @@ class Board
      */
     private function candidateKeys(array $pullRequests, array $staging): array
     {
-        $branches = array_merge(array_keys($pullRequests), array_keys($staging));
+        $sources = array_merge(
+            array_keys($pullRequests),
+            array_keys($staging),
+            array_column($pullRequests, 'title')
+        );
 
-        return array_merge(...array_map(Key::allFromBranch(...), $branches));
+        return array_merge(...array_map(Key::allFromBranch(...), $sources));
     }
 
     /**
@@ -221,7 +225,7 @@ class Board
 
             // The first key-shaped token Jira actually recognises is the real one.
             $ticket = null;
-            foreach (Key::allFromBranch($item->branch) as $candidate) {
+            foreach ($item->candidateKeys() as $candidate) {
                 $ticket = $tickets[$candidate] ?? null;
                 if ($ticket !== null) {
                     break;
