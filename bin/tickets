@@ -13,6 +13,7 @@ use D3R\Tickets\Filters;
 use D3R\Tickets\GitHub;
 use D3R\Tickets\Jira;
 use D3R\Tickets\Progress;
+use D3R\Tickets\Slack;
 use D3R\Tickets\Stoker;
 use D3R\Tickets\Table;
 
@@ -27,7 +28,7 @@ spl_autoload_register(function (string $class): void {
     }
 });
 
-$longOptions = ['anyone', 'active', 'project:', 'status:', 'machine:', 'since:', 'fresh', 'no-links', 'no-colour', 'help'];
+$longOptions = ['anyone', 'active', 'project:', 'status:', 'machine:', 'since:', 'fresh', 'slack', 'no-links', 'no-colour', 'help'];
 $known = array_map(static fn(string $option) => rtrim($option, ':'), $longOptions);
 
 // getopt ignores unknown long options without a word, which hides a typo or an old flag.
@@ -60,6 +61,8 @@ if (isset($options['h']) || isset($options['help'])) {
           --active          Hide finished tickets (Live by default, set in config)
           --since=DAYS      Only work touched in this window (default 90, 0 for no limit)
           --fresh           Ignore the cached deployment list and ask stoker again
+          --slack           Plain bulleted list with pull request links, to paste
+                            into Slack. Rows with no open PR are left out
           --no-links        Print without terminal hyperlinks
           --no-colour       Print without colour
       -h, --help            This help
@@ -71,6 +74,8 @@ if (isset($options['h']) || isset($options['help'])) {
       tickets -m niki -a    Every box on niki, whoever owns it
       tickets -p LF -s review
       tickets basket        Anything with basket in the summary or branch
+      tickets -s "d3r review" --slack
+                            A review request list to paste into Slack
 
     HELP);
     exit(0);
@@ -110,9 +115,17 @@ $empty = $filters->active()
     ? sprintf('Nothing matches %s.', $filters->describe())
     : 'Nothing assigned and nothing in flight.';
 
-fwrite(STDOUT, $table->render($items, $empty));
-
 $warnings = array_merge($jira->warnings(), $github->warnings(), $stoker->warnings());
+
+if (isset($options['slack'])) {
+    $slack = new Slack();
+    $list = $slack->render($items);
+
+    fwrite(STDOUT, $list === '' ? '' : $list);
+    $warnings = array_merge($warnings, $list === '' ? ['Nothing to request a review on.'] : [], $slack->notes());
+} else {
+    fwrite(STDOUT, $table->render($items, $empty));
+}
 
 if (!$config->hasJira()) {
     $warnings[] = sprintf('No Jira credentials in %s, so tickets are missing.', $config->path());

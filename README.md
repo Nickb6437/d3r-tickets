@@ -25,6 +25,7 @@ Ticket key opens Jira. Summary and `#number` open the pull request. Alias opens 
 | `tickets -s review` | Status, partial, so this catches D3R and LOAF review |
 | `tickets -m niki` | Your work on a staging machine |
 | `tickets -m niki -a` | **Every box on a machine**, whoever owns it, including ones on trunk. Leave `--active` off for the complete list |
+| `tickets -s "d3r review" --active --slack` | **Review request list** to paste into Slack |
 | `tickets doctor` | Check Jira, gh and stoker are set up and reachable |
 
 Flags combine: `tickets -p LF -s review -m niki`.
@@ -32,6 +33,31 @@ Flags combine: `tickets -p LF -s review -m niki`.
 Machines: **niki** loaf, **aliz** soho, **anya** general.
 
 Also: `--fresh` (skip the cached deployment list), `--no-links`, `--no-colour`, `-h`.
+
+## Asking for reviews
+
+`--slack` swaps the table for a plain bulleted list, so it can be pasted straight into
+Slack. It respects every filter, so it is not tied to one status.
+
+```sh
+tickets -s "d3r review" --active --slack | pbcopy
+```
+
+```
+• LF-8152 Updates to Trade Application Page: https://github.com/D3R/loaf/pull/7462
+• LF-8141 Editorial Block 3: https://github.com/D3R/loaf/pull/7452
+```
+
+Bare URLs, because Slack auto-links those; its `<url|label>` form only works through the
+API, not text pasted into the composer. Rows with no open pull request are left out, and
+anything conflicting is named on stderr so you know before you ask, without it landing in
+what you paste. Add `--active` to keep the Jira query under its 100 ticket page.
+
+Worth a shell alias:
+
+```sh
+alias review-request='tickets -s "d3r review" --active --slack | pbcopy'
+```
 
 ## Reading it
 
