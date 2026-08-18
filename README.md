@@ -16,7 +16,7 @@ Ticket key opens Jira. Summary and `#number` open the pull request. Alias opens 
 
 | Command | Shows |
 |---|---|
-| `tickets --active` | **The everyday view.** Still in flight, Live hidden |
+| `tickets --active` | **The everyday view.** Still in flight; Live and Closed hidden |
 | `tickets` | Last 90 days, every status |
 | `tickets --since 21` | Last 21 days (`--since 0` for no limit) |
 | `tickets LF-8141` | One ticket, whoever it belongs to, any age |
@@ -89,8 +89,9 @@ warning, not an error. Only a broken config or a rejected Jira token exits non-z
 - Ticket keys come from the branch name first, then the pull request title, since not
   every branch carries one (`bugherd-fixes` only names LF-7978 in its title). A key only
   counts if Jira recognises it, which is what stops `revert-7364-…` reading as REVERT-7364.
-- `--active` hides finished tickets by status, and rows with no ticket by their pull
-  request: merged or closed with nothing deployed. A staging box is never hidden this way.
+- `--active` hides finished tickets by status (`Live` and `Closed`, set in
+  `display.inactive`), and rows with no ticket by their pull request: merged or closed
+  with nothing deployed. A staging box is never hidden this way.
 - Runs in 8 to 10 seconds, with a spinner on stderr naming the current step. Stdout stays
   clean, so piping and `--no-colour` are unaffected.
 

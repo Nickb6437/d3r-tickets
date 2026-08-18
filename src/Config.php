@@ -28,8 +28,8 @@ class Config
         ],
         'display' => [
             'since_days' => '90',
-            // Statuses --active hides. Comma separated, add Closed or Done to taste.
-            'inactive' => 'Live',
+            // Statuses --active hides. Comma separated, add Done for projects that use it.
+            'inactive' => 'Live, Closed',
         ],
     ];
 
