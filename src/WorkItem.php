@@ -98,7 +98,9 @@ class WorkItem
     public function openPullRequest(): ?array
     {
         foreach ($this->prs as $pullRequest) {
-            if ($pullRequest['state'] === 'open' && !$pullRequest['draft']) {
+            $own = $pullRequest['belongs'] ?? true;
+
+            if ($own && $pullRequest['state'] === 'open' && !$pullRequest['draft']) {
                 return $pullRequest;
             }
         }

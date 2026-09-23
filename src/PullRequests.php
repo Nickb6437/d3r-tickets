@@ -49,14 +49,20 @@ final class PullRequests
                 continue;
             }
 
+            foreach ($candidates as $number => $candidate) {
+                $candidates[$number]['belongs'] = $this->belongsTo($candidate, $item);
+            }
+
             $branch = $item->branch;
 
             // The row's own branch leads, so the branch and pull request columns agree.
             uasort($candidates, fn(array $a, array $b) => [
+                $a['belongs'] ? 0 : 1,
                 $a['branch'] === $branch ? 0 : 1,
                 $this->rank($a),
                 -$a['number'],
             ] <=> [
+                $b['belongs'] ? 0 : 1,
                 $b['branch'] === $branch ? 0 : 1,
                 $this->rank($b),
                 -$b['number'],
@@ -131,6 +137,33 @@ final class PullRequests
         }
 
         return $candidates;
+    }
+
+    /**
+     * Whether a pull request is this row's own work.
+     *
+     * Jira links a pull request to every ticket its description mentions, so a PR that
+     * merely cites another ticket as the cause arrives on that ticket's row too. A PR
+     * naming a different key in its branch or title belongs to that key, not this row.
+     *
+     * @param  array    $pullRequest
+     * @param  WorkItem $item
+     * @return bool
+     */
+    private function belongsTo(array $pullRequest, WorkItem $item): bool
+    {
+        $key = $item->ticketKey();
+        if ($key === null) {
+            return true;
+        }
+
+        $text = $pullRequest['branch'] . ' ' . $pullRequest['title'];
+        if (Key::mentioned($text, $key)) {
+            return true;
+        }
+
+        // No key of its own, so nothing contradicts this row's claim to it.
+        return Key::allFromBranch($text) === [];
     }
 
     /**
