@@ -114,6 +114,10 @@ class Filters
      */
     public function matches(WorkItem $item): bool
     {
+        if ($this->doneWith($item)) {
+            return false;
+        }
+
         if ($this->activeOnly && $this->isFinished($item)) {
             return false;
         }
@@ -176,6 +180,29 @@ class Filters
     }
 
     /**
+     * Rows nobody needs to see again, hidden in every view.
+     *
+     * No ticket and its pull request is merged or closed, so there is nothing left to
+     * track. Or the ticket itself is Closed. A deployed box always survives, so a
+     * machine listing still shows everything on it.
+     *
+     * @param  WorkItem $item
+     * @return bool
+     */
+    private function doneWith(WorkItem $item): bool
+    {
+        if ($item->staging !== null) {
+            return false;
+        }
+
+        if ($item->status === null) {
+            return in_array($item->pr['state'] ?? '', ['merged', 'closed'], true);
+        }
+
+        return strcasecmp($item->status, 'Closed') === 0;
+    }
+
+    /**
      * Whether this row is done with.
      *
      * A ticket is judged on its status. A row with no ticket has no status to judge, so
@@ -187,8 +214,7 @@ class Filters
     private function isFinished(WorkItem $item): bool
     {
         if ($item->status === null) {
-            return $item->staging === null
-                && in_array($item->pr['state'] ?? '', ['merged', 'closed'], true);
+            return false;
         }
 
         foreach ($this->inactiveStatuses as $status) {
