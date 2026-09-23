@@ -25,6 +25,7 @@ Ticket key opens Jira. Summary and `#number` open the pull request. Alias opens 
 | `tickets -s review` | Status, partial, so this catches D3R and LOAF review |
 | `tickets -m niki` | Your work on a staging machine |
 | `tickets -m niki -a` | **Every box on a machine**, whoever owns it, including ones on trunk. Leave `--active` off for the complete list |
+| `tickets --unapproved` | **Open PRs nobody has approved yet**, drafts excluded |
 | `tickets -s "d3r review" --active --slack` | **Review request list** to paste into Slack |
 | `tickets doctor` | Check Jira, gh and stoker are set up and reachable |
 

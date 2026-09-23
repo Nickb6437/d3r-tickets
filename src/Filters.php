@@ -14,8 +14,19 @@ class Filters
         private ?string $machine = null,
         private bool $everyone = false,
         private bool $activeOnly = false,
-        private array $inactiveStatuses = []
+        private array $inactiveStatuses = [],
+        private bool $unapprovedOnly = false
     ) {
+    }
+
+    /**
+     * Whether to keep only rows with an open pull request awaiting approval.
+     *
+     * @return bool
+     */
+    public function unapprovedOnly(): bool
+    {
+        return $this->unapprovedOnly;
     }
 
     /**
@@ -48,7 +59,8 @@ class Filters
             $value('m', 'machine'),
             isset($options['a']) || isset($options['anyone']),
             isset($options['active']),
-            $inactiveStatuses
+            $inactiveStatuses,
+            isset($options['unapproved'])
         );
     }
 
@@ -133,7 +145,8 @@ class Filters
         return $this->identifier !== null
             || $this->project !== null
             || $this->status !== null
-            || $this->machine !== null;
+            || $this->machine !== null
+            || $this->unapprovedOnly;
     }
 
     /**
@@ -151,6 +164,7 @@ class Filters
                 'project' => $this->project,
                 'status' => $this->status,
                 'machine' => $this->machine,
+                'awaiting approval' => $this->unapprovedOnly ? 'yes' : null,
             ] as $label => $value
         ) {
             if ($value !== null) {

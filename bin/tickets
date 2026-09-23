@@ -28,7 +28,7 @@ spl_autoload_register(function (string $class): void {
     }
 });
 
-$longOptions = ['anyone', 'active', 'project:', 'status:', 'machine:', 'since:', 'fresh', 'slack', 'no-links', 'no-colour', 'help'];
+$longOptions = ['anyone', 'active', 'unapproved', 'project:', 'status:', 'machine:', 'since:', 'fresh', 'slack', 'no-links', 'no-colour', 'help'];
 $known = array_map(static fn(string $option) => rtrim($option, ':'), $longOptions);
 
 // getopt ignores unknown long options without a word, which hides a typo or an old flag.
@@ -59,6 +59,7 @@ if (isset($options['h']) || isset($options['help'])) {
       -a, --anyone          Include work that is not yours, such as a staging box
                             running someone else's branch. Their tickets are marked *
           --active          Hide finished tickets (Live by default, set in config)
+          --unapproved      Only open pull requests nobody has approved yet
           --since=DAYS      Only work touched in this window (default 90, 0 for no limit)
           --fresh           Ignore the cached deployment list and ask stoker again
           --slack           Plain bulleted list with pull request links, to paste
@@ -74,6 +75,7 @@ if (isset($options['h']) || isset($options['help'])) {
       tickets -m niki -a    Every box on niki, whoever owns it
       tickets -p LF -s review
       tickets basket        Anything with basket in the summary or branch
+      tickets --unapproved  Your open PRs still waiting on a review
       tickets -s "d3r review" --slack
                             A review request list to paste into Slack
 

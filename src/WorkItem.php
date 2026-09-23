@@ -91,6 +91,34 @@ class WorkItem
     }
 
     /**
+     * The open pull request on this row, ignoring drafts.
+     *
+     * @return array|null
+     */
+    public function openPullRequest(): ?array
+    {
+        foreach ($this->prs as $pullRequest) {
+            if ($pullRequest['state'] === 'open' && !$pullRequest['draft']) {
+                return $pullRequest;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether this row has an open pull request nobody has approved yet.
+     *
+     * @return bool
+     */
+    public function awaitingApproval(): bool
+    {
+        $pullRequest = $this->openPullRequest();
+
+        return $pullRequest !== null && $pullRequest['review'] !== 'APPROVED';
+    }
+
+    /**
      * Short repo name without the owner prefix.
      *
      * @return string

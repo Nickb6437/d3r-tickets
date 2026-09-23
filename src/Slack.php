@@ -25,7 +25,7 @@ final class Slack
         $blocked = [];
 
         foreach ($items as $item) {
-            $pullRequest = $this->reviewable($item);
+            $pullRequest = $item->openPullRequest();
 
             if ($pullRequest === null) {
                 $missing++;
@@ -85,20 +85,4 @@ final class Slack
         return trim(preg_replace('/^' . preg_quote($item->key, '/') . '\s*:?\s*/i', '', $summary) ?? $summary);
     }
 
-    /**
-     * The open pull request on a row, which is the only kind worth asking about.
-     *
-     * @param  WorkItem $item
-     * @return array|null
-     */
-    private function reviewable(WorkItem $item): ?array
-    {
-        foreach ($item->prs as $pullRequest) {
-            if ($pullRequest['state'] === 'open' && !$pullRequest['draft']) {
-                return $pullRequest;
-            }
-        }
-
-        return null;
-    }
 }

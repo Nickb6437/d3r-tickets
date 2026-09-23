@@ -78,6 +78,11 @@ class Board
         Progress::step('reading pull request states');
         (new PullRequests($this->github))->resolve($items, $repoToHandle);
 
+        // Review state only exists once GitHub has been asked, so this pass waits.
+        if ($filters->unapprovedOnly()) {
+            $items = array_values(array_filter($items, static fn(WorkItem $item) => $item->awaitingApproval()));
+        }
+
         usort($items, static fn(WorkItem $a, WorkItem $b) => strcmp($b->sortKey(), $a->sortKey()));
 
         Progress::clear();
