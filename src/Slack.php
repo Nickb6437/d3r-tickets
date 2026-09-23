@@ -84,5 +84,4 @@ final class Slack
 
         return trim(preg_replace('/^' . preg_quote($item->key, '/') . '\s*:?\s*/i', '', $summary) ?? $summary);
     }
-
 }
